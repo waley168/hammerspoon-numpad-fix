@@ -49,6 +49,11 @@ local BLACKLIST = {
   -- ["com.apple.Terminal"] = true,
   -- ["com.googlecode.iterm2"] = true,
   -- ["com.microsoft.VSCode"] = true,
+
+  -- 網頁瀏覽器（如果特定網頁有問題，可暫時加入黑名單）
+  -- ["com.apple.Safari"] = true,
+  -- ["com.google.Chrome"] = true,
+  -- ["company.thebrowser.Browser"] = true,  -- Arc Browser
 }
 
 local function isBlacklisted()
@@ -61,7 +66,7 @@ end
 -- ============================================================================
 
 -- 檢測當前是否使用中文輸入法
-local function isIMEComposing()
+local function isChineseIME()
   local source = hs.keycodes.currentSourceID()
   return source:match("com%.apple%.inputmethod") or
          source:match("Chinese") or
@@ -70,22 +75,13 @@ local function isIMEComposing()
 end
 
 -- 輸入半形字元
--- 在中文輸入法組字狀態下，會先送出 ESC 取消組字，再輸入字元
+-- 策略：直接使用 keyStrokes 輸入，不切換輸入法，不送出 Enter/ESC
 local function injectChar(info)
   hs.timer.doAfter(0, function()
     local char = info.char
 
-    -- 如果在中文輸入法下，先取消組字狀態
-    if isIMEComposing() then
-      local esc = hs.eventtap.event.newKeyEvent({}, 53, true)
-      esc:post()
-      hs.timer.usleep(5000)
-      local escUp = hs.eventtap.event.newKeyEvent({}, 53, false)
-      escUp:post()
-      hs.timer.usleep(5000)
-    end
-
-    -- 輸入半形字元
+    -- 直接輸入半形字元
+    -- keyStrokes 會自動處理輸入法狀態，輸出 ASCII 字元
     hs.eventtap.keyStrokes(char)
   end)
 end
